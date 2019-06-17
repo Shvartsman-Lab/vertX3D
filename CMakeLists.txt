@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(vertX3D)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fopenmp")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fopenmp -w")
 
 include_directories(include)
 
