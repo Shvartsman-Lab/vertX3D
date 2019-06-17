@@ -16,4 +16,6 @@ e) Compile examples:
     
     make
     
- **NOTE**: The folder "initial" within the "build" folder contains .vt3d files used as input to the example simulations.
+d) Create output directory:
+
+    mkdir output
