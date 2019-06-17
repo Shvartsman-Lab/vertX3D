@@ -155,7 +155,8 @@ int division_extrusion(double kd, double ke, double Temp){
 }
 //****************************************************************************
 void run(){    
-    set_initial_fromFile("./initial/stretched.vt3d");
+    //set_initial_fromFile("./initial/stretched.vt3d");
+    set_initial_fromFile("./initial/overcrowded.vt3d");
     char filename[50]; snprintf(filename, sizeof(char) * 50, "./output/out_NrOfCells.txt");
     FILE *fNrCells; fNrCells = fopen(filename, "wt");
     h=0.001;

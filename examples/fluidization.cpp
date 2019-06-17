@@ -4,6 +4,10 @@ double alph =1.;    //apical tension
 double kV   =100;   //reciprocal isothermal compressibility
 double V0   =1.;    //preferred volume
 
+//**************** SPECIFIC GLOBAL PARAMETERS************************
+double kT1 = 50.; //Rate of Active T1 Transitions
+
+
 //*******************INCLUDE*************************
 #include "functions.h"
 //***************************************************
@@ -145,8 +149,8 @@ void run(){
         
         //TOPOLOGICAL TRANSFORMATIONS
         val_red(20*h,0.001);
-        //T1_spont_act(0.1,300-300*Time/tmax);
-        T1_spont_act(0.1,50);
+        T1_spont_act(0.1,300-300*Time/tmax);
+        // T1_spont_act(0.1,kT1);
         
         tcount+=h;
         tcount2+=h;

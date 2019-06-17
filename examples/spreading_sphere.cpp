@@ -39,7 +39,7 @@ void spont_T1(double _threshold_length){
     }
 }
 //****************************************************************************
-int division_extrusion(double k){
+int divide_cell(double k){
     int cell_balance=0;
     for(size_t i=1; i<=Nc; i++) if(basal_edges[i][1]!=0) if ( rnd()<k ) cell_balance+=cell_division(i);
     return cell_balance;
@@ -66,7 +66,7 @@ void run(){
         }
         project_on_constraints(5.);
         spont_T1(0.2);
-        nr_of_cells+=division_extrusion(2*h/(1.*nr_of_cells));
+        nr_of_cells+=divide_cell(2*h/(1.*nr_of_cells));
         countTime+=h;
         if(nr_of_cells>=800) break;
     }
