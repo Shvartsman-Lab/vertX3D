@@ -53,6 +53,7 @@ void run(){
 
     double hess_guess = 1.0;
     int do_implicit = 0;
+    bool yolk_present = false;
     while(Time<tmax){
         if(countTime>2){
             intTime++;
@@ -60,7 +61,7 @@ void run(){
             write_vtk(intTime);
             countTime=0;
         }
-        if (eqOfMotion(hess_guess, do_implicit) != 0) {
+        if (eqOfMotion(hess_guess, do_implicit, yolk_present) != 0) {
             printf("Exiting time loop\n");
             break;
         }

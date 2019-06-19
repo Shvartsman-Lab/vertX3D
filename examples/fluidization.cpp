@@ -124,6 +124,7 @@ void run(){
     h=0.001;
     double hess_guess = 1.0;
     int do_implicit = 0;
+    bool yolk_present = false;
     while(Time<tmax){
         
         if(tcount>10){
@@ -135,7 +136,7 @@ void run(){
         }
         
         //EQUATION OF MOTION
-        if (eqOfMotion(hess_guess, do_implicit) != 0) {
+        if (eqOfMotion(hess_guess, do_implicit, yolk_present) != 0) {
             printf("Exiting time loop\n");
             break;
         }
