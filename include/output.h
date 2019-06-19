@@ -107,21 +107,46 @@ void write_vtk(int kcount) {
 
     }
 
-
     const int filenameSize = 200;
     char filename[filenameSize];
 
     int cell_size = 0;
-    // for (int i = 1; i <= Nc; i++) {
-    //     cell_size += basal_vertices[i][2] + 1;
-    // }
     for (int i = 0; i < poly_basal.size(); i++) {
         cell_size += poly_basal[i].size() + 1;
     }
     
     //BASAL SIDES
     snprintf(filename, sizeof(char) * filenameSize, "./output/outBasal_%d.vtk", kcount);
-    FILE *file2; 
+    FILE *file1; 
+    file1 = fopen(filename, "w");
+    fprintf(file1, "# vtk DataFile Version 3.0\n");
+    fprintf(file1, "Cell Mesh\n");
+    fprintf(file1, "ASCII\n\n");
+    fprintf(file1, "DATASET POLYDATA\n");
+    fprintf(file1, "POINTS %d double\n", vert_temp.size());
+    //Write out verts
+    for(int i = 0; i < vert_temp.size(); i++) {
+        fprintf(file1, "%f %f %f\n", vert_temp[i].x, vert_temp[i].y, vert_temp[i].z);
+    }
+    fprintf(file1, "\nPOLYGONS\t%d\t%d\n", poly_basal.size(), cell_size);
+    for (int i = 0; i < poly_basal.size(); i++) {
+        fprintf(file1, "%d ", poly_basal[i].size());
+        for(size_t j = 0; j < poly_basal[i].size(); j++) {
+            fprintf(file1, "%d ", poly_basal[i][j]);
+        }
+        fprintf(file1, "\n");
+    }
+    fprintf(file1, "\nCELL_DATA\t%d\n", poly_basal.size());
+    fprintf(file1, "FIELD Cell_properties 1\n");
+    fprintf(file1, "Cell_sides 1 %d double\n", poly_basal.size());
+    for (int i = 0; i < poly_basal.size(); i++) {
+        fprintf(file1, "%d\n", poly_basal[i].size());
+    }
+    fclose(file1);
+    
+    //APICAL SIDES
+    snprintf(filename, sizeof(char) * filenameSize, "./output/outApical_%d.vtk", kcount);
+    FILE *file2;
     file2 = fopen(filename, "w");
     fprintf(file2, "# vtk DataFile Version 3.0\n");
     fprintf(file2, "Cell Mesh\n");
@@ -129,33 +154,27 @@ void write_vtk(int kcount) {
     fprintf(file2, "DATASET POLYDATA\n");
     fprintf(file2, "POINTS %d double\n", vert_temp.size());
     //Write out verts
-    // for(int i = 1; i <= Nv; i++) {
-    //     if (v[i][0] > 0.5) {
-    //         fprintf(file2, "%f %f %f\n", v[i][1], v[i][2], v[i][3]);
-    //     }
-    // }
     for(int i = 0; i < vert_temp.size(); i++) {
         fprintf(file2, "%f %f %f\n", vert_temp[i].x, vert_temp[i].y, vert_temp[i].z);
     }
-    fprintf(file2, "\nPOLYGONS\t%d\t%d\n", poly_basal.size(), cell_size);
-    // for (int i = 1; i <= Nc; i++) {
-    //     fprintf(file2, "%d ", basal_vertices[i][2]);
-    //     for(size_t j = 3; j <= 2+basal_edges[i][2]; ++j) {
-    //         fprintf(file2, "%d ", basal_vertices[i][j]-1);
-    //     }
-    //     fprintf(file2, "\n");
-    // }
-    for (int i = 0; i < poly_basal.size(); i++) {
-        fprintf(file2, "%d ", poly_basal[i].size());
-        for(size_t j = 0; j < poly_basal[i].size(); j++) {
-            fprintf(file2, "%d ", poly_basal[i][j]);
+    fprintf(file2, "\nPOLYGONS\t%d\t%d\n", poly_apical.size(), cell_size);
+    for (int i = 0; i < poly_apical.size(); i++) {
+        fprintf(file2, "%d ", poly_apical[i].size());
+        for(size_t j = 0; j < poly_apical[i].size(); j++) {
+            fprintf(file2, "%d ", poly_apical[i][j]);
         }
         fprintf(file2, "\n");
     }
+    fprintf(file2, "\nCELL_DATA\t%d\n", poly_apical.size());
+    fprintf(file2, "FIELD Cell_properties 1\n");
+    fprintf(file2, "Cell_sides 1 %d double\n", poly_apical.size());
+    for (int i = 0; i < poly_apical.size(); i++) {
+        fprintf(file2, "%d\n", poly_apical[i].size());
+    }
     fclose(file2);
-    
-    //APICAL SIDES
-    snprintf(filename, sizeof(char) * filenameSize, "./output/outApical_%d.vtk", kcount);
+
+    //LATERAL SIDES
+    snprintf(filename, sizeof(char) * filenameSize, "./output/outLateral_%d.vtk", kcount);
     FILE *file3;
     file3 = fopen(filename, "w");
     fprintf(file3, "# vtk DataFile Version 3.0\n");
@@ -164,58 +183,14 @@ void write_vtk(int kcount) {
     fprintf(file3, "DATASET POLYDATA\n");
     fprintf(file3, "POINTS %d double\n", vert_temp.size());
     //Write out verts
-    // for(int i = 1; i <= Nv; i++) {
-    //     if (v[i][0] > 0.5) {
-    //         fprintf(file3, "%f %f %f\n", v[i][1], v[i][2], v[i][3]);
-    //     }
-    // }
     for(int i = 0; i < vert_temp.size(); i++) {
         fprintf(file3, "%f %f %f\n", vert_temp[i].x, vert_temp[i].y, vert_temp[i].z);
     }
-    fprintf(file3, "\nPOLYGONS\t%d\t%d\n", poly_apical.size(), cell_size);
-    // for(int i = 1; i <= Nc; i++){
-    //     fprintf(file3, "%d ", basal_vertices[i][2]);
-    //     for(size_t j = 3; j <= 2+basal_edges[i][2]; ++j) {
-    //         fprintf(file3, "%d ", v_partner[basal_vertices[i][j]]-1);
-    //     }
-    //     fprintf(file3, "\n");
-    // }
-    for (int i = 0; i < poly_apical.size(); i++) {
-        fprintf(file3, "%d ", poly_apical[i].size());
-        for(size_t j = 0; j < poly_apical[i].size(); j++) {
-            fprintf(file3, "%d ", poly_apical[i][j]);
-        }
-        fprintf(file3, "\n");
+    fprintf(file3, "\nPOLYGONS\t%d\t%d\n", poly_lateral.size(), 5*poly_lateral.size());
+    for(int i = 0; i < poly_lateral.size(); i++) {
+        fprintf(file3, "4 %d %d %d %d\n", poly_lateral[i][0], poly_lateral[i][1], poly_lateral[i][2], poly_lateral[i][3]);
     }
     fclose(file3);
-
-    //LATERAL SIDES
-    snprintf(filename, sizeof(char) * filenameSize, "./output/outLateral_%d.vtk", kcount);
-    FILE *file4;
-    file4 = fopen(filename, "w");
-    fprintf(file4, "# vtk DataFile Version 3.0\n");
-    fprintf(file4, "Cell Mesh\n");
-    fprintf(file4, "ASCII\n\n");
-    fprintf(file4, "DATASET POLYDATA\n");
-    fprintf(file4, "POINTS %d double\n", vert_temp.size());
-    //Write out verts
-    // for(int i = 1; i <= Nv; i++) {
-    //     if (v[i][0] > 0.5) {
-    //         fprintf(file3, "%f %f %f\n", v[i][1], v[i][2], v[i][3]);
-    //     }
-    // }
-    for(int i = 0; i < vert_temp.size(); i++) {
-        fprintf(file4, "%f %f %f\n", vert_temp[i].x, vert_temp[i].y, vert_temp[i].z);
-    }
-    fprintf(file4, "\nPOLYGONS\t%d\t%d\n", poly_lateral.size(), 5*poly_lateral.size());
-    // fprintf(file4, "\nPOLYGONS\t%d\t%d\n", Ne, 5*Ne);
-    // for(int i = 1; i <= Ne; i++) {
-    //     fprintf(file4, "4 %d %d %d %d\n", e[i][1]-1, e[i][2]-1, v_partner[e[i][2]]-1, v_partner[e[i][1]]-1);
-    // }
-    for(int i = 0; i < poly_lateral.size(); i++) {
-        fprintf(file4, "4 %d %d %d %d\n", poly_lateral[i][0], poly_lateral[i][1], poly_lateral[i][2], poly_lateral[i][3]);
-    }
-    fclose(file4);
 }
 
 double out_structureB(int intTime){

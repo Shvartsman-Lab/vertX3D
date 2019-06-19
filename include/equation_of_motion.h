@@ -9,7 +9,7 @@
 //***********************EQUATION OF MOTION***********************************
 //****************************************************************************
 //****************************************************************************
-void forces(){
+void forces(bool yolk_present){
     
     //w = T A
     wA = 0;
@@ -32,6 +32,12 @@ void forces(){
         if(basal_edges[i][1]!=0){
             wV += c_VolCompressibility_force(i, f);
         }
+    }
+
+    //YOLK
+    wY = 0;
+    if (yolk_present) {
+        wY = YolkCompressibility_force(f);
     }
 }
 //****************************************************************************
@@ -56,7 +62,7 @@ void fix_central_vertices(){
 }
 //****************************************************************************
 // void gradient(const Eigen::VectorXd &x, const Eigen::VectorXd &x_prev, Eigen::VectorXd &grad) {
-void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad) {
+void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad, bool yolk_present) {
     for (size_t i = 1; i <= Nv; i++) {
         if(v[i][0]>0.5){
             for (size_t j = 1; j <= 3; j++) {
@@ -66,7 +72,7 @@ void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad) {
     }
     fix_central_vertices();
 
-    forces();
+    forces(yolk_present);
 
     // Eigen::VectorXd force_vec(x.size());
     LargeVec force_vec(x.size());
@@ -91,9 +97,9 @@ void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad) {
     }
 }
 //****************************************************************************
-int L_BFGS(double &hess_guess, int print) {
+int L_BFGS(double &hess_guess, bool yolk_present, int print) {
     int m = 10;
-    double tolDiffX = 1e-4;
+    double tolDiffX = 1e-6;
     double tolDiffGrad = 1e-4;
 
     int nDof = 3 * Nv;
@@ -114,7 +120,7 @@ int L_BFGS(double &hess_guess, int print) {
     }
     x0 = x_prev;
 
-    gradient(x0, x_prev, grad);
+    gradient(x0, x_prev, grad, yolk_present);
 
     VecContainer s(m), y(m);
     for (int i = 0; i < m; i++) {
@@ -176,7 +182,7 @@ int L_BFGS(double &hess_guess, int print) {
 			break;
 		}
 
-		gradient(x0, x_prev, grad);
+		gradient(x0, x_prev, grad, yolk_present);
 
 		gradNorm = grad.norm();
 
@@ -223,16 +229,16 @@ int L_BFGS(double &hess_guess, int print) {
     return 0;
 }
 //****************************************************************************
-int eqOfMotion(double &hess_guess, int do_implicit){
+int eqOfMotion(double &hess_guess, int do_implicit, bool yolk_present) {
     
     if (do_implicit > 0)  {
-        if (L_BFGS(hess_guess, 1) != 0) {
+        if (L_BFGS(hess_guess, yolk_present, 1) != 0) {
             printf("Failed to converge\n");
             return -1;
         }
     } else {
         //CALCULATES FORCES
-        forces();
+        forces(yolk_present);
 
         //EQUATION OF MOTION
         #pragma omp parallel for schedule(guided) shared(v_F, v)
@@ -267,7 +273,7 @@ int eqOfMotion(double &hess_guess, int do_implicit){
     Time+=h;
     
     // printf("%g\t\t area: %.10f\t\t energyA: %.10f\t\t energyV: %.10f\t\t energy: %.10f\t\t max_move: %.3g\n", Time, A_tot, wA, wV, wA+wV, max_move);
-    printf("%g\t area: %.10f\t energyA: %.10f\t energyV: %.10f\t energy: %.10f\t max_move: %.3g\tNv = %d\tNc = %d\tNe = %d\n", Time, A_tot, wA, wV, wA+wV, max_move, Nv, Nc, Ne);
+    printf("%g\tenergyA: %.10f\tenergyV: %.10f\tenergyY: %.10f\tenergy: %.10f\tNv = %d\tNc = %d\tNe = %d\n", Time, wA, wV, wY, wA+wV+wY, Nv, Nc, Ne);
 
 
     return 0;

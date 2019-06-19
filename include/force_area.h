@@ -54,8 +54,10 @@ double f_SurfaceTension_force(const int i, int **_f){
     const double facet_area = 0.5*sqrt(pow(ax, 2.) + pow(ay, 2.) + pow(az, 2.));
     
     
+    double grad_mult = (2e-3 * log(facet_area) + facet_area) / facet_area;
     //GRADIENT : te gradiente zapisi z vektorskimi operacijami!
-    const double c0 = -0.25*f_T[i]/facet_area;
+    const double c0 = -0.25*f_T[i]*grad_mult/facet_area;
+    // const double c0 = -0.25*f_T[i]/facet_area;
     const double c1 = (v1y*v2x - v1x*v2y - v1y*v3x + v2y*v3x + v1x*v3y - v2x*v3y);
     const double c2 = (v1z*(v2x - v3x) + v2z*v3x - v2x*v3z + v1x*(-v2z + v3z));
     const double c3 = (v1z*v2y - v1y*v2z - v1z*v3y + v2z*v3y + v1y*v3z - v2y*v3z);

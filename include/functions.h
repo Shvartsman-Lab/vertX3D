@@ -66,10 +66,13 @@ double *c_kV;
 double *c_alpha;
 double *c_beta;
 
+//Yolk
+double VY0, c_kY;
+
 //MISC
 double *perioXYZ;
 double h, Time, max_move;
-double wA, wV, A_tot;
+double wA, wV, wY, A_tot;
 FreeId v_freeId, v_pass_freeId, e_freeId, f_freeId, c_freeId;
 size_t array_max, seed;
 double tmax;
@@ -91,6 +94,7 @@ double tmax;
 #include "initial_structure.h"
 #include "force_area.h"
 #include "force_volume.h"
+#include "force_volume_yolk.h"
 #include "equation_of_motion.h"
 #include "dissolve.h"
 #include "list_manipulation.h"
