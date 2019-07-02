@@ -36,15 +36,15 @@ If a segmentation fault is encountered when running the code, it is likely that 
 
 For the included example simulations, please use the following commands to run them:
 
-# Spreading on a flat surface
+### Spreading on a flat surface
 
     ./vertX3D_spreading_flat 100000 600 1 4
 
-# Spreading on a sphere
+### Spreading on a sphere
 
     ./vertX3D_spreading_sphere 100000 600 1 4
 
-# Homeostasis
+### Homeostasis
 
     ./vertX3D_homeostasis 100000 20 1 4
 
@@ -62,7 +62,7 @@ for the stretched configuration or
 
 for the normal configuration. After modifying the code run make in the build folder to re-compile.
 
-# Fluidization
+### Fluidization
 
     ./vertX3D_fluidization 200000 2000 1 4
 
@@ -76,7 +76,7 @@ and uncomment the line:
 
 kT1 can be set at the top of fluidization.cpp. After modifying the code run make in the build folder to re-compile.
 
-# Sphere crumpling
+### Sphere crumpling
 
     ./vertX3D_sphere 300000 100 1 4
 
