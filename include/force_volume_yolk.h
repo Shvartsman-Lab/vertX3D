@@ -41,7 +41,8 @@ double yolk_volume(int **_f){
     for(size_t i=1; i<=Nc;i++){
         if(basal_edges[i][1]!=0){
             for(size_t j = 3; j <= 2+basal_edges[i][2]; ++j){
-                fac_id = apical_facets[i][j];
+                // fac_id = apical_facets[i][j];
+                fac_id = basal_facets[i][j];
                 _Yvol += sign*dVY(fac_id, _f);
             }
         }
@@ -50,7 +51,7 @@ double yolk_volume(int **_f){
     return _Yvol;
 }
 //****************************************************************************
-void f_YolkCompressibility_force(int i, double sign, double Yolk_vol, int **_f){
+void f_YolkCompressibility_force(int i, double sign, double Yolk_vol, int **_f, int cell_id){
     
     //IDENTIFY VERTICES
     const int v1 = _f[i][1];
@@ -72,6 +73,7 @@ void f_YolkCompressibility_force(int i, double sign, double Yolk_vol, int **_f){
     double v3z = v_pass[v3][3];
     
     double _deriv = -2.*sign*c_kY*(Yolk_vol-VY0);
+
     //GRADIENT
     //v1
     #pragma omp atomic
@@ -87,7 +89,24 @@ void f_YolkCompressibility_force(int i, double sign, double Yolk_vol, int **_f){
     v_F[v2][2] += _deriv*(-(v1z*v3x) + v1x*v3z)/6.;
     #pragma omp atomic
     v_F[v2][3] += _deriv*(  v1y*v3x  - v1x*v3y)/6.;
-    
+
+    int v_id;
+    int S_m = basal_edges[cell_id][2];
+
+    double ax = _deriv / (S_m * 6.0) * (v1y*v2z - v2y*v1z);
+    double ay = _deriv / (S_m * 6.0) * (v2x*v1z - v1x*v2z);
+    double az = _deriv / (S_m * 6.0) * (v1x*v2y - v2x*v1y);
+
+    for (size_t j = 3; j <= 2 + S_m; j++) {
+        v_id = basal_vertices[cell_id][j];
+        
+        #pragma omp atomic
+        v_F[v_id][1] += ax;
+        #pragma omp atomic
+        v_F[v_id][2] += ay;
+        #pragma omp atomic
+        v_F[v_id][3] += az;
+    }
 }
 //****************************************************************************
 double YolkCompressibility_force(int **_f){
@@ -100,8 +119,9 @@ double YolkCompressibility_force(int **_f){
     for(size_t i=1; i<=Nc;i++){
         if(basal_edges[i][1]!=0){
             for(size_t j =3; j <= 2+basal_edges[i][2]; j++){
-                int fac_id=apical_facets[i][j];
-                f_YolkCompressibility_force(fac_id, sign, _Yvol, _f);
+                // int fac_id=apical_facets[i][j];
+                int fac_id=basal_facets[i][j];
+                f_YolkCompressibility_force(fac_id, sign, _Yvol, _f, i);
             }
         }
     }

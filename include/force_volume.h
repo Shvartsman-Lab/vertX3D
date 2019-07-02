@@ -179,6 +179,7 @@ void f_VolCompressibility_force(int i, int cell_id, double sign, int vert_ref_id
     }
     
     double _deriv = -2.*sign*c_kV[cell_id]*(cell_vol-c_V0[cell_id]);
+
     //GRADIENT
     //v1
     #pragma omp atomic
@@ -194,8 +195,78 @@ void f_VolCompressibility_force(int i, int cell_id, double sign, int vert_ref_id
     v_F[v2][2] += _deriv*(-(v1z*v3x) + v1x*v3z)/6.;
     #pragma omp atomic
     v_F[v2][3] += _deriv*(  v1y*v3x  - v1x*v3y)/6.;
-    
+
+    int S_m = 4;
+    if (f_type[i] != 3) {
+        S_m = basal_edges[cell_id][2];
+    }
+
+    double ax = _deriv / (S_m * 6.0) * (v1y*v2z - v2y*v1z);
+    double ay = _deriv / (S_m * 6.0) * (v2x*v1z - v1x*v2z);
+    double az = _deriv / (S_m * 6.0) * (v1x*v2y - v2x*v1y);
+
+
+    int v_id;
+    if (f_type[i] != 3) {
+        //IF BASAL OR APICAL
+        for (size_t j = 3; j <= 2 + S_m; j++) {
+            if (f_type[i] == 1) {
+                v_id = basal_vertices[cell_id][j];
+            } else {
+                v_id = v_partner[basal_vertices[cell_id][j]];
+            }
+            
+            #pragma omp atomic
+            v_F[v_id][1] += ax;
+            #pragma omp atomic
+            v_F[v_id][2] += ay;
+            #pragma omp atomic
+            v_F[v_id][3] += az;
+        }
+    } else {
+        //IF LATERAL
+        //lateral1
+        // v_id = _f[e_lateral1[edg_id]][1];
+        v_id = e[f_edge[i]][1];
+        #pragma omp atomic
+        v_F[v_id][1] += ax;
+        #pragma omp atomic
+        v_F[v_id][2] += ay;
+        #pragma omp atomic
+        v_F[v_id][3] += az;
+
+        //lateral2
+        // v_id = _f[e_lateral2[edg_id]][1];
+        v_id = e[f_edge[i]][2];
+        #pragma omp atomic
+        v_F[v_id][1] += ax;
+        #pragma omp atomic
+        v_F[v_id][2] += ay;
+        #pragma omp atomic
+        v_F[v_id][3] += az;
+
+        //lateral3
+        // v_id = _f[e_lateral3[edg_id]][1];
+        v_id = v_partner[e[f_edge[i]][1]];
+        #pragma omp atomic
+        v_F[v_id][1] += ax;
+        #pragma omp atomic
+        v_F[v_id][2] += ay;
+        #pragma omp atomic
+        v_F[v_id][3] += az;
+
+        //lateral4
+        // v_id = _f[e_lateral4[edg_id]][1];
+        v_id = v_partner[e[f_edge[i]][2]];
+        #pragma omp atomic
+        v_F[v_id][1] += ax;
+        #pragma omp atomic
+        v_F[v_id][2] += ay;
+        #pragma omp atomic
+        v_F[v_id][3] += az;
+    }
 }
+
 //****************************************************************************
 double c_VolCompressibility_force(const int cell_id, int **_f){
     
@@ -218,6 +289,7 @@ double c_VolCompressibility_force(const int cell_id, int **_f){
         f_VolCompressibility_force(e_lateral3[edg_id], cell_id, sign, vert_ref_id, cell_vol, _f);
         f_VolCompressibility_force(e_lateral4[edg_id], cell_id, sign, vert_ref_id, cell_vol, _f);
     }
+
     return c_kV[cell_id]*pow((cell_vol-c_V0[cell_id]),2);
 }
 //****************************************************************************

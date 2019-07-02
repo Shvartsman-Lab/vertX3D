@@ -1,6 +1,5 @@
 #pragma once
 
-// #include <Eigen/Dense>
 #include "functions.h"
 #include "LBFGS_helpers.h"
 
@@ -9,25 +8,24 @@
 //***********************EQUATION OF MOTION***********************************
 //****************************************************************************
 //****************************************************************************
-void forces(bool yolk_present){
-    
-    //w = T A
+void forces(bool yolk_present, double implicit_eps){
+    // w = T A
     wA = 0;
     A_tot = 0;
     size_t _nf=Nf;
-    #pragma omp parallel for schedule(guided) shared(v, f) reduction(+:A_tot, wA)
+    #pragma omp parallel for schedule(guided) shared(v, f, v_F) reduction(+:A_tot, wA)
     for(size_t i = 1; i <= _nf; i++){
         if(f[i][0]!=0){
-            const double _aTot=f_SurfaceTension_force(i, f);
+            double _aTot=f_SurfaceTension_force(i, f, implicit_eps);
             wA    += f_T[i]*_aTot;
             A_tot += _aTot;
         }
     }
     
-    //w = k_V (V-V_0)^2
+    // w = k_V (V-V_0)^2
     wV=0;
     size_t _nc=Nc;
-    #pragma omp parallel for schedule(guided) shared(v_F, v) reduction(+:wV)
+    #pragma omp parallel for schedule(guided) shared(v_F, v, f) reduction(+:wV)
     for(size_t i = 1; i <= _nc; i++){
         if(basal_edges[i][1]!=0){
             wV += c_VolCompressibility_force(i, f);
@@ -62,7 +60,7 @@ void fix_central_vertices(){
 }
 //****************************************************************************
 // void gradient(const Eigen::VectorXd &x, const Eigen::VectorXd &x_prev, Eigen::VectorXd &grad) {
-void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad, bool yolk_present) {
+void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad, bool yolk_present, double implicit_eps) {
     for (size_t i = 1; i <= Nv; i++) {
         if(v[i][0]>0.5){
             for (size_t j = 1; j <= 3; j++) {
@@ -72,7 +70,7 @@ void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad, bool yolk_present) 
     }
     fix_central_vertices();
 
-    forces(yolk_present);
+    forces(yolk_present, implicit_eps);
 
     // Eigen::VectorXd force_vec(x.size());
     LargeVec force_vec(x.size());
@@ -97,7 +95,7 @@ void gradient(LargeVec &x, LargeVec &x_prev, LargeVec &grad, bool yolk_present) 
     }
 }
 //****************************************************************************
-int L_BFGS(double &hess_guess, bool yolk_present, int print) {
+int L_BFGS(double &hess_guess, bool yolk_present, int print, double implicit_eps) {
     int m = 10;
     double tolDiffX = 1e-6;
     double tolDiffGrad = 1e-4;
@@ -120,7 +118,7 @@ int L_BFGS(double &hess_guess, bool yolk_present, int print) {
     }
     x0 = x_prev;
 
-    gradient(x0, x_prev, grad, yolk_present);
+    gradient(x0, x_prev, grad, yolk_present, implicit_eps);
 
     VecContainer s(m), y(m);
     for (int i = 0; i < m; i++) {
@@ -182,7 +180,7 @@ int L_BFGS(double &hess_guess, bool yolk_present, int print) {
 			break;
 		}
 
-		gradient(x0, x_prev, grad, yolk_present);
+		gradient(x0, x_prev, grad, yolk_present, implicit_eps);
 
 		gradNorm = grad.norm();
 
@@ -229,16 +227,15 @@ int L_BFGS(double &hess_guess, bool yolk_present, int print) {
     return 0;
 }
 //****************************************************************************
-int eqOfMotion(double &hess_guess, int do_implicit, bool yolk_present) {
-    
-    if (do_implicit > 0)  {
-        if (L_BFGS(hess_guess, yolk_present, 1) != 0) {
+int eqOfMotion(double &hess_guess, bool do_implicit, bool yolk_present) {
+    if (do_implicit)  {
+        if (L_BFGS(hess_guess, yolk_present, 1, 1e-3) != 0) {
             printf("Failed to converge\n");
             return -1;
         }
     } else {
         //CALCULATES FORCES
-        forces(yolk_present);
+        forces(yolk_present, 0.0);
 
         //EQUATION OF MOTION
         #pragma omp parallel for schedule(guided) shared(v_F, v)
@@ -265,16 +262,14 @@ int eqOfMotion(double &hess_guess, int do_implicit, bool yolk_present) {
             }
         }
     }
-    
+
     //FIXES PASSIVE VERTICES
     fix_central_vertices();
     
     //t=t+dt
     Time+=h;
     
-    // printf("%g\t\t area: %.10f\t\t energyA: %.10f\t\t energyV: %.10f\t\t energy: %.10f\t\t max_move: %.3g\n", Time, A_tot, wA, wV, wA+wV, max_move);
     printf("%g\tenergyA: %.10f\tenergyV: %.10f\tenergyY: %.10f\tenergy: %.10f\tNv = %d\tNc = %d\tNe = %d\n", Time, wA, wV, wY, wA+wV+wY, Nv, Nc, Ne);
-
 
     return 0;
 }

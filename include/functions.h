@@ -13,6 +13,8 @@
 
 using namespace std;
 
+//TEMP FOR Hexagonal.cpp
+int input_Nx;
 
 //GEOMETRIC ELEMENTS
 size_t Nv, Nv_pass, Ne, Nf, Nc;

@@ -15,42 +15,98 @@ struct Point {
     double x, y, z;
 };
 
-void write_vtk(int kcount) {
+void Point_torus_dx_dy_dz(double *dxdydz, Point vert, Point vert_ref){
+    
+    dxdydz[0]=0;
+    dxdydz[1]=0;
+    dxdydz[2]=0;
+    
+    //x
+    if (fabs(vert.x - vert_ref.x) > 0.5 * perioXYZ[0]){
+        if (vert.x < vert_ref.x)
+            dxdydz[0] = perioXYZ[0];
+        else if (vert.x > vert_ref.x)
+            dxdydz[0] = -perioXYZ[0];
+    } else {
+        dxdydz[0] = 0;
+    }
+    //y
+    if (fabs(vert.y - vert_ref.y) > 0.5 * perioXYZ[1]){
+        if (vert.y < vert_ref.y)
+            dxdydz[1] = perioXYZ[1];
+        else if (vert.y > vert_ref.y)
+            dxdydz[1] = -perioXYZ[1];
+    } else {
+        dxdydz[1] = 0;
+    }
+    //z
+    if (fabs(vert.z - vert_ref.z) > 0.5 * perioXYZ[2]){
+        if (vert.z < vert_ref.z)
+            dxdydz[2] = perioXYZ[2];
+        else if (vert.z > vert_ref.z)
+            dxdydz[2] = -perioXYZ[2];
+    } else {
+        dxdydz[2] = 0;
+    }
+}
+
+Point Point_dx_dy_dz(double x, double y, double z){
+    //x
+    if      (x<0)             x += perioXYZ[0];
+    else if (x>perioXYZ[0])   x -= perioXYZ[0];
+    //y
+    if      (y<0)             y += perioXYZ[1];
+    else if (y>perioXYZ[1])  y -= perioXYZ[1];
+    //z
+    if      (z<0)             z += perioXYZ[2];
+    else if (z>perioXYZ[2])   z -= perioXYZ[2];
+    
+    return Point(x, y, z);
+}
+
+void write_vtk(int kcount, double dx, double dy, double dz) {
     //Fix Periodic Boundary
     double dxdydz[3] = {0., 0., 0.};
     std::vector<Point> vert_temp;
     vert_temp.resize(Nv);
     std::vector<std::vector<int>> poly_basal, poly_apical, poly_lateral;
-    poly_basal.resize(Nc);
-    poly_apical.resize(Nc);
+    //Count cells:
+    std::vector<int> cell_map;
+    for (int i = 1; i <= Nc; i++) {
+        if(basal_edges[i][1]!=0) {
+            cell_map.push_back(i);
+        }
+    }
+    poly_basal.resize(cell_map.size());
+    poly_apical.resize(cell_map.size());
     poly_lateral.resize(Ne);
     for (int i = 0; i < Nv; i++) {
         if (v[i+1][0] > 0.5) {
-            vert_temp[i].x = v[i+1][1];
-            vert_temp[i].y = v[i+1][2];
-            vert_temp[i].z = v[i+1][3];
+            vert_temp[i] = Point_dx_dy_dz(v[i+1][1] + dx, v[i+1][2] + dy, v[i+1][3] + dz);
         }
     }
-    for (int m = 0; m < Nc; m++) {
+    for (int m = 0; m < cell_map.size(); m++) {
         //copy basal_verticies to poly_basal
-        poly_basal[m].resize(basal_vertices[m+1][2]);
-        for (int i = 3; i <= 2+basal_vertices[m+1][2]; i++) {
-            poly_basal[m][i-3] = basal_vertices[m+1][i]-1;
+        int cell_id = cell_map[m];
+        poly_basal[m].resize(basal_vertices[cell_id][2]);
+        for (int i = 3; i <= 2+basal_vertices[cell_id][2]; i++) {
+            poly_basal[m][i-3] = basal_vertices[cell_id][i]-1;
         }
 
         //copy v_partner[basal_verticies] to poly_apical
-        poly_apical[m].resize(basal_vertices[m+1][2]);
-        for (int i = 3; i <= 2+basal_vertices[m+1][2]; i++) {
-            poly_apical[m][i-3] = v_partner[basal_vertices[m+1][i]]-1;
+        poly_apical[m].resize(basal_vertices[cell_id][2]);
+        for (int i = 3; i <= 2+basal_vertices[cell_id][2]; i++) {
+            poly_apical[m][i-3] = v_partner[basal_vertices[cell_id][i]]-1;
         }
 
-        int vert_ref_id = poly_basal[m][0]+1;
+        int vert_ref_id = poly_basal[m][0];
         bool new_vert;
         for (int i = 0; i < poly_basal[m].size(); i++) {
             //basal side
             new_vert = false;
-            int vert_id = poly_basal[m][i]+1;
-            torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            int vert_id = poly_basal[m][i];
+            // torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            Point_torus_dx_dy_dz(dxdydz, vert_temp[vert_id], vert_temp[vert_ref_id]);
             for (int j = 0; j < 3; j++) {
                 if (fabs(dxdydz[j]) > 1e-6) {
                     new_vert = true;
@@ -58,14 +114,15 @@ void write_vtk(int kcount) {
                 }
             }
             if (new_vert) {
-                vert_temp.push_back(Point(v[vert_id][1] + dxdydz[0], v[vert_id][2] + dxdydz[1], v[vert_id][3] + dxdydz[2]));
+                vert_temp.push_back(Point(vert_temp[vert_id].x + dxdydz[0], vert_temp[vert_id].y + dxdydz[1], vert_temp[vert_id].z + dxdydz[2]));
                 poly_basal[m][i] = vert_temp.size()-1;
             }
 
             //apical side
             new_vert = false;
-            vert_id = poly_apical[m][i]+1;
-            torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            vert_id = poly_apical[m][i];
+            // torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            Point_torus_dx_dy_dz(dxdydz, vert_temp[vert_id], vert_temp[vert_ref_id]);
             for (int j = 0; j < 3; j++) {
                 if (fabs(dxdydz[j]) > 1e-6) {
                     new_vert = true;
@@ -73,7 +130,7 @@ void write_vtk(int kcount) {
                 }
             }
             if (new_vert) {
-                vert_temp.push_back(Point(v[vert_id][1] + dxdydz[0], v[vert_id][2] + dxdydz[1], v[vert_id][3] + dxdydz[2]));
+                vert_temp.push_back(Point(vert_temp[vert_id].x + dxdydz[0], vert_temp[vert_id].y + dxdydz[1], vert_temp[vert_id].z + dxdydz[2]));
                 poly_apical[m][i] = vert_temp.size()-1;
             }
         }
@@ -86,13 +143,14 @@ void write_vtk(int kcount) {
         poly_lateral[m][2] = v_partner[e[m+1][2]]-1;
         poly_lateral[m][3] = v_partner[e[m+1][1]]-1;
 
-        int vert_ref_id = poly_lateral[m][0]+1;
+        int vert_ref_id = poly_lateral[m][0];
         bool new_vert;
         for (int i = 1; i < 4; i++) {
             //lateral side
             new_vert = false;
-            int vert_id = poly_lateral[m][i]+1;
-            torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            int vert_id = poly_lateral[m][i];
+            // torus_dx_dy_dz(dxdydz,vert_id,vert_ref_id);
+            Point_torus_dx_dy_dz(dxdydz, vert_temp[vert_id], vert_temp[vert_ref_id]);
             for (int j = 0; j < 3; j++) {
                 if (fabs(dxdydz[j]) > 1e-6) {
                     new_vert = true;
@@ -100,11 +158,10 @@ void write_vtk(int kcount) {
                 }
             }
             if (new_vert) {
-                vert_temp.push_back(Point(v[vert_id][1] + dxdydz[0], v[vert_id][2] + dxdydz[1], v[vert_id][3] + dxdydz[2]));
+                vert_temp.push_back(Point(vert_temp[vert_id].x + dxdydz[0], vert_temp[vert_id].y + dxdydz[1], vert_temp[vert_id].z + dxdydz[2]));
                 poly_lateral[m][i] = vert_temp.size()-1;
             }
         }
-
     }
 
     const int filenameSize = 200;
