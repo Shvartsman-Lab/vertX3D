@@ -6,6 +6,7 @@ double V0   =1.;    //preferred volume
 
 //**************** SPECIFIC GLOBAL PARAMETERS************************
 double kT1 = 50.; //Rate of Active T1 Transitions
+int t1_count = 0;
 
 
 //*******************INCLUDE*************************
@@ -18,14 +19,6 @@ void T1_merge(int i){
         int vertid=merge_vertices(i);
         v_clock[vertid]=0;
     }
-    /*else if (basal_edges[e_cell1[i]][2]==3 || basal_edges[e_cell2[i]][2]==3){
-        if (basal_edges[e_cell1[i]][2]==3) printf("T1 on edge %d ... can't perform (triangular cell %d)\n",i, e_cell1[i]);
-        if (basal_edges[e_cell2[i]][2]==3) printf("T1 on edge %d ... can't perform (triangular cell %d)\n",i, e_cell2[i]);
-    }
-    else if (v_cell4[e[i][1]]!=0 || v_cell4[e[i][2]]!=0){
-        if (v_cell4[e[i][1]]!=0) printf("T1 on edge %d ... can't perform (4-way vertex %d)\n", i, e[i][1]);
-        if (v_cell4[e[i][2]]!=0) printf("T1 on edge %d ... can't perform (4-way vertex %d)\n", i, e[i][2]);
-    }*/
 }
 //****************************************************************************
 void val_red(double vclock, double finLength){
@@ -57,30 +50,13 @@ void T1_spont_act(double _threshold_length, double _kT1){
             else if( rnd()<_kT1*h/(1.*Ne) ){
                 //std::clog << "Active ";
                 T1_merge(i);
+                t1_count++;
             }
             else e_length[i]=eLen;
         }
     }
     
 }
-//****************************************************************************
-/*double ceHeight(int i){
-    
-    double ddx,ddy,ddz;
-    double *dxdydz = new double[3];
-    dxdydz[0]=0; dxdydz[1]=0; dxdydz[2]=0;
-    
-    int v1=c_cent_apical[i], v2=c_cent_basal[i];
-    torus_pass_dx_dy_dz(dxdydz,v1,v2);
-    ddx=v_pass[v2][1]-(v_pass[v1][1]+dxdydz[0]);
-    ddy=v_pass[v2][2]-(v_pass[v1][2]+dxdydz[1]);
-    ddz=v_pass[v2][3]-(v_pass[v1][3]+dxdydz[2]);
-    double hght=sqrt(ddx*ddx+ddy*ddy+ddz*ddz);
-    
-    delete []dxdydz;
-    
-    return hght;
-}*/
 //****************************************************************************
 void outDeformationField(int intTime){
     
@@ -104,17 +80,10 @@ void outDeformationField(int intTime){
 }
 //****************************************************************************
 void run(){
-    
     set_initial_fromFile("./initial/crumpled340.vt3d");
-    //*************************
-    
-    //*********************************************************************************
-    //*********************************************************************************
-    //*********************************************************************************
-    //SIMULATION
+
     //*************************
     //DYNAMICS
-    //expand_box(-0.15,-0.15,0);
     FILE *filee;
     filee = fopen("./output/energy.txt", "wt"); fclose(filee);
     
@@ -123,15 +92,14 @@ void run(){
     
     h=0.001;
     double hess_guess = 1.0;
-    int do_implicit = 0;
+    bool do_implicit = false;
     bool yolk_present = false;
     while(Time<tmax){
         
         if(tcount>10){
             timeINT++;
             outDeformationField(timeINT);
-            // outStructure(timeINT);
-            write_vtk(timeINT);
+            write_vtk(timeINT, -2.5, -6., 0.);
             tcount=0;
         }
         
@@ -143,7 +111,7 @@ void run(){
         
         if(tcount2>1){
             filee = fopen("./output/energy.txt", "at");
-            fprintf(filee, "%g  %g  %g\n", Time, wA, wV);
+            fprintf(filee, "%g\t%g\t%g\t%d\n", Time, wA, wV, t1_count);
             tcount2=0;
             fclose(filee);
         }

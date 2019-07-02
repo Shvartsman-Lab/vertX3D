@@ -89,14 +89,13 @@ void run(){
     double countTime=1000;
 
     double hess_guess = 1.0;
-    int do_implicit = 0;
+    bool do_implicit = false;
     bool yolk_present = false;
     while(Time<tmax){
         if(countTime>2){
             countPolygons(); aggregateDiameter();
             intTime++;
-            // outStructure(intTime);
-            write_vtk(intTime);
+            write_vtk(intTime, 0., 0., 0.);
             countTime=0;
         }
         if (eqOfMotion(hess_guess, do_implicit, yolk_present) != 0) {

@@ -4,32 +4,27 @@ double alph =.5;    //apical tension
 double kV   =100.;  //reciprocal isothermal compressibility
 double V0   =1.;    //preferred volume
 
-// double VY0  =17804.44;
-// double VY0 = 3891.4143;
-
-// double kT1=0;
-
 //*******************DECLARATIONS*************************
 #include "functions.h"
 //********************************************************
 
 //********************************************************
 void run(){
-    set_initial_fromFile("./initial/out_Final.vt3d");
+    set_initial_fromFile("./initial/sphere6078.vt3d");
     h=0.01;
     int intTime=0;
     double countTime=1000;
 
-    VY0 = 19519.0193;
+    VY0 = yolk_volume(f);
     c_kY =100.0;
 
     double hess_guess = 1.0;
-    int do_implicit = 1;
+    bool do_implicit = true;
     bool yolk_present = true;
     while (Time < tmax) {
         if (countTime > 1) {
+            write_vtk(intTime, 0., 0., 0.);
             intTime++;
-            write_vtk(intTime);
             countTime=0;
         }
 

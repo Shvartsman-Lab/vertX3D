@@ -154,8 +154,7 @@ int division_extrusion(double kd, double ke, double Temp){
     return cell_balance;
 }
 //****************************************************************************
-void run(){    
-    //set_initial_fromFile("./initial/stretched.vt3d");
+void run(){
     set_initial_fromFile("./initial/overcrowded.vt3d");
     char filename[50]; snprintf(filename, sizeof(char) * 50, "./output/out_NrOfCells.txt");
     FILE *fNrCells; fNrCells = fopen(filename, "wt");
@@ -163,7 +162,7 @@ void run(){
     int nr_of_cells=Nc;
 
     double hess_guess = 1.0;
-    int do_implicit = 0;
+    bool do_implicit = false;
     bool yolk_present = false;
     while(Time<tmax){
         
@@ -185,10 +184,9 @@ void run(){
         fprintf(fNrCells,"%g  %d\n", Time, nr_of_cells);
     }
     // outStructure(0);
-    write_vtk(0);
+    write_vtk(0, 0., 0., 0.);
     
     fclose(fNrCells);
-    
 }
 
 //********************MAIN********************************
