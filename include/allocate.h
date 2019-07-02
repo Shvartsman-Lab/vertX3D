@@ -32,8 +32,10 @@ int read_code_arguments(int argc, char *argv[]){
     //number of threads
     size_t num_threads=std::stoul(argv[4]);
     std::clog << "NumThreads: " << num_threads << std::endl;
+#if defined(_OPENMP)
     omp_set_dynamic(0);
     omp_set_num_threads(num_threads);
+#endif
     
     return 1;
 }

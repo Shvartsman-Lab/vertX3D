@@ -8,7 +8,11 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+
+#if defined(_OPENMP)
 #include <omp.h>
+#endif
+
 #include "freeid.h"
 
 using namespace std;
